@@ -269,14 +269,18 @@ def test_output_option(tmpdir, arg):
         expected = """
 test_dir/file1.txt
 ---
+
 Contents of file1.txt
 
 ---
+
 test_dir/file2.txt
 ---
+
 Contents of file2.txt
 
 ---
+
 """
         assert expected.strip() == actual.strip()
 
@@ -294,6 +298,8 @@ def test_ignore_paths_directory(tmpdir):
             f.write("This is file3.txt")
         with open("test_dir/ignored_file.txt", "w") as f:
             f.write("This file should be ignored")
+        with open("test_dir/subdirectory/ignored_file.txt", "w") as f:
+            f.write("This file also should be ignored")
 
         result = runner.invoke(
             cli, ["test_dir", "--ignore-paths", "test_dir/subdirectory"]
@@ -305,8 +311,8 @@ def test_ignore_paths_directory(tmpdir):
         assert "This is file2.txt" in result.output
         assert "test_dir/subdirectory/file3.txt" not in result.output
         assert "This is file3.txt" not in result.output
-        assert "test_dir/ignored_file.txt" not in result.output
-        assert "This file should be ignored" not in result.output
+        assert "test_dir/subdirectory/ignored_file.txt" not in result.output
+        assert "This file also should be ignored" not in result.output
 
         result = runner.invoke(
             cli, ["test_dir", "--ignore-paths", "test_dir/ignored_file.txt"]

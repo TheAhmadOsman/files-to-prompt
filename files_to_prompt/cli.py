@@ -6,7 +6,7 @@ import click
 global_index = 1
 
 
-def should_ignore(path, gitignore_rules, ignore_paths):
+def should_ignore(path, gitignore_rules, ignore_patterns, ignore_paths):
     # Check if the path or any of its parent paths are in the ignore_paths list
     for ignore_path in ignore_paths:
         if os.path.commonpath([path, ignore_path]) == ignore_path:
@@ -17,6 +17,11 @@ def should_ignore(path, gitignore_rules, ignore_paths):
             return True
         if os.path.isdir(path) and fnmatch(os.path.basename(path) + "/", rule):
             return True
+    # Check against ignore_patterns
+    if ignore_patterns:
+        for pattern in ignore_patterns:
+            if fnmatch(path, pattern):
+                return True
     return False
 
 
@@ -40,9 +45,11 @@ def print_path(writer, path, content, xml):
 def print_default(writer, path, content):
     writer(path)
     writer("---")
+    writer("")
     writer(content)
     writer("")
     writer("---")
+    writer("")
 
 
 def print_as_xml(writer, path, content):
@@ -68,7 +75,7 @@ def process_path(
     claude_xml,
 ):
     if os.path.isfile(path):
-        if should_ignore(path, gitignore_rules, ignore_paths):
+        if should_ignore(path, gitignore_rules, ignore_patterns, ignore_paths):
             return
         try:
             with open(path, "r") as f:
@@ -77,7 +84,7 @@ def process_path(
             warning_message = f"Warning: Skipping file {path} due to UnicodeDecodeError"
             click.echo(click.style(warning_message, fg="red"), err=True)
     elif os.path.isdir(path):
-        for root, dirs, files in os.walk(path):
+        for root, dirs, files in os.walk(path, topdown=True):
             if not include_hidden:
                 dirs[:] = [d for d in dirs if not d.startswith(".")]
                 files = [f for f in files if not f.startswith(".")]
@@ -88,14 +95,20 @@ def process_path(
                     d
                     for d in dirs
                     if not should_ignore(
-                        os.path.join(root, d), gitignore_rules, ignore_paths
+                        os.path.join(root, d),
+                        gitignore_rules,
+                        ignore_patterns,
+                        ignore_paths,
                     )
                 ]
                 files = [
                     f
                     for f in files
                     if not should_ignore(
-                        os.path.join(root, f), gitignore_rules, ignore_paths
+                        os.path.join(root, f),
+                        gitignore_rules,
+                        ignore_patterns,
+                        ignore_paths,
                     )
                 ]
 
@@ -107,11 +120,13 @@ def process_path(
                 ]
 
             if extensions:
-                files = [f for f in files if f.endswith(extensions)]
+                files = [f for f in files if f.endswith(tuple(extensions))]
 
             for file in sorted(files):
                 file_path = os.path.join(root, file)
-                if should_ignore(file_path, gitignore_rules, ignore_paths):
+                if should_ignore(
+                    file_path, gitignore_rules, ignore_patterns, ignore_paths
+                ):
                     continue
                 try:
                     with open(file_path, "r") as f:
