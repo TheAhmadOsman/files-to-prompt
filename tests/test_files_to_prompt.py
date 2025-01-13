@@ -267,19 +267,23 @@ def test_output_option(tmpdir, arg):
         with open(output_file, "r") as f:
             actual = f.read()
         expected = """
-test_dir/file1.txt
+\ttest_dir/file1.txt
 ---
 
 Contents of file1.txt
 
 ---
 
-test_dir/file2.txt
+
+
+\ttest_dir/file2.txt
 ---
 
 Contents of file2.txt
 
 ---
+
+
 
 """
         assert expected.strip() == actual.strip()
@@ -326,3 +330,44 @@ def test_ignore_paths_directory(tmpdir):
         assert "This is file3.txt" in result.output
         assert "test_dir/ignored_file.txt" not in result.output
         assert "This file should be ignored" not in result.output
+
+
+@pytest.mark.parametrize(
+    "args", (["test_dir"], ["test_dir/file1.txt", "test_dir/file2.txt"])
+)
+def test_ignore_default(tmpdir, args):
+    runner = CliRunner()
+    with tmpdir.as_cwd():
+        os.makedirs("test_dir")
+        os.makedirs("test_dir/.github/workflows")
+        with open("test_dir/file1.txt", "w") as f:
+            f.write("Contents of file1.txt")
+        with open("test_dir/file2.txt", "w") as f:
+            f.write("Contents of file2.txt")
+        with open("test_dir/LICENSE", "w") as f:
+            f.write("MIT License")
+        with open("test_dir/.gitignore", "w") as f:
+            f.write(".DS_Store")
+        with open("test_dir/.github/workflows/workflow.yml", "w") as f:
+            f.write("CI/CD workflow")
+        with open("test_dir/requirements.txt", "w") as f:
+            f.write("numpy")
+        with open("test_dir/pyproject.toml", "w") as f:
+            f.write("[project]")
+
+        result = runner.invoke(cli, args + ["--ignore-default"])
+        assert result.exit_code == 0
+        assert "test_dir/file1.txt" in result.output
+        assert "Contents of file1.txt" in result.output
+        assert "test_dir/file2.txt" in result.output
+        assert "Contents of file2.txt" in result.output
+        assert "test_dir/LICENSE" not in result.output
+        assert "MIT License" not in result.output
+        assert "test_dir/.gitignore" not in result.output
+        assert ".DS_Store" not in result.output
+        assert "test_dir/.github/workflows/workflow.yml" not in result.output
+        assert "CI/CD workflow" not in result.output
+        assert "test_dir/requirements.txt" not in result.output
+        assert "numpy" not in result.output
+        assert "test_dir/pyproject.toml" not in result.output
+        assert "[project]" not in result.output

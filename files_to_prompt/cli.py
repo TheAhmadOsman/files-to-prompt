@@ -35,7 +35,11 @@ def read_gitignore(path):
     return []
 
 
-def print_path(writer, path, content, xml):
+def print_path(writer, path, content, xml, debug=False):
+    if debug:
+        with open("paths.txt", "a") as f:
+            f.write(path)
+            f.write("\n")
     if xml:
         print_as_xml(writer, path, content)
     else:
@@ -43,12 +47,14 @@ def print_path(writer, path, content, xml):
 
 
 def print_default(writer, path, content):
-    writer(path)
+    writer("\t" + path)
     writer("---")
     writer("")
     writer(content)
     writer("")
     writer("---")
+    writer("")
+    writer("")
     writer("")
 
 
@@ -166,6 +172,11 @@ def process_path(
     help="List of paths to ignore",
 )
 @click.option(
+    "--ignore-default",
+    is_flag=True,
+    help="Ignore default patterns: .github/workflows, LICENSE, .gitignore, CI/CD stuff, env/venv, node_modules, pyproject.toml, uv.lock, requirements.txt",
+)
+@click.option(
     "output_file",
     "-o",
     "--output",
@@ -187,6 +198,7 @@ def cli(
     ignore_gitignore,
     ignore_patterns,
     ignore_paths,
+    ignore_default,
     output_file,
     claude_xml,
 ):
@@ -225,6 +237,27 @@ def cli(
     if output_file:
         fp = open(output_file, "w")
         writer = lambda s: print(s, file=fp)
+
+    default_ignore_patterns = [
+        "*.git*",
+        "*.github*",
+        "LICENSE",
+        ".gitignore",
+        "*env*",
+        "*venv*",
+        "*.env*",
+        "*.venv*",
+        "*__pycache__*",
+        "*pytest_cache*",
+        "*node_modules*",
+        "requirements.txt",
+        "pyproject.toml",
+        "uv.lock",
+    ]
+
+    if ignore_default:
+        ignore_patterns = list(ignore_patterns) + default_ignore_patterns
+
     for path in paths:
         if not os.path.exists(path):
             raise click.BadArgumentUsage(f"Path does not exist: {path}")
