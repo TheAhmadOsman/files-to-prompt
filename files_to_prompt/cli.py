@@ -6,7 +6,12 @@ import click
 global_index = 1
 
 
-def should_ignore(path, gitignore_rules):
+def should_ignore(path, gitignore_rules, ignore_paths):
+    # Check if the path or any of its parent paths are in the ignore_paths list
+    for ignore_path in ignore_paths:
+        if os.path.commonpath([path, ignore_path]) == ignore_path:
+            return True
+    # Check against gitignore rules
     for rule in gitignore_rules:
         if fnmatch(os.path.basename(path), rule):
             return True
@@ -58,10 +63,13 @@ def process_path(
     ignore_gitignore,
     gitignore_rules,
     ignore_patterns,
+    ignore_paths,
     writer,
     claude_xml,
 ):
     if os.path.isfile(path):
+        if should_ignore(path, gitignore_rules, ignore_paths):
+            return
         try:
             with open(path, "r") as f:
                 print_path(writer, path, f.read(), claude_xml)
@@ -79,12 +87,16 @@ def process_path(
                 dirs[:] = [
                     d
                     for d in dirs
-                    if not should_ignore(os.path.join(root, d), gitignore_rules)
+                    if not should_ignore(
+                        os.path.join(root, d), gitignore_rules, ignore_paths
+                    )
                 ]
                 files = [
                     f
                     for f in files
-                    if not should_ignore(os.path.join(root, f), gitignore_rules)
+                    if not should_ignore(
+                        os.path.join(root, f), gitignore_rules, ignore_paths
+                    )
                 ]
 
             if ignore_patterns:
@@ -99,6 +111,8 @@ def process_path(
 
             for file in sorted(files):
                 file_path = os.path.join(root, file)
+                if should_ignore(file_path, gitignore_rules, ignore_paths):
+                    continue
                 try:
                     with open(file_path, "r") as f:
                         print_path(writer, file_path, f.read(), claude_xml)
@@ -130,6 +144,13 @@ def process_path(
     help="List of patterns to ignore",
 )
 @click.option(
+    "ignore_paths",
+    "--ignore-paths",
+    multiple=True,
+    default=[],
+    help="List of paths to ignore",
+)
+@click.option(
     "output_file",
     "-o",
     "--output",
@@ -150,6 +171,7 @@ def cli(
     include_hidden,
     ignore_gitignore,
     ignore_patterns,
+    ignore_paths,
     output_file,
     claude_xml,
 ):
@@ -202,6 +224,7 @@ def cli(
             ignore_gitignore,
             gitignore_rules,
             ignore_patterns,
+            ignore_paths,
             writer,
             claude_xml,
         )

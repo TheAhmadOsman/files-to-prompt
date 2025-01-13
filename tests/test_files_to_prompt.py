@@ -1,6 +1,6 @@
 import os
-import pytest
 
+import pytest
 from click.testing import CliRunner
 
 from files_to_prompt.cli import cli
@@ -279,3 +279,44 @@ Contents of file2.txt
 ---
 """
         assert expected.strip() == actual.strip()
+
+
+def test_ignore_paths_directory(tmpdir):
+    runner = CliRunner()
+    with tmpdir.as_cwd():
+        os.makedirs("test_dir")
+        os.makedirs("test_dir/subdirectory")
+        with open("test_dir/file1.txt", "w") as f:
+            f.write("This is file1.txt")
+        with open("test_dir/file2.txt", "w") as f:
+            f.write("This is file2.txt")
+        with open("test_dir/subdirectory/file3.txt", "w") as f:
+            f.write("This is file3.txt")
+        with open("test_dir/ignored_file.txt", "w") as f:
+            f.write("This file should be ignored")
+
+        result = runner.invoke(
+            cli, ["test_dir", "--ignore-paths", "test_dir/subdirectory"]
+        )
+        assert result.exit_code == 0
+        assert "test_dir/file1.txt" in result.output
+        assert "This is file1.txt" in result.output
+        assert "test_dir/file2.txt" in result.output
+        assert "This is file2.txt" in result.output
+        assert "test_dir/subdirectory/file3.txt" not in result.output
+        assert "This is file3.txt" not in result.output
+        assert "test_dir/ignored_file.txt" not in result.output
+        assert "This file should be ignored" not in result.output
+
+        result = runner.invoke(
+            cli, ["test_dir", "--ignore-paths", "test_dir/ignored_file.txt"]
+        )
+        assert result.exit_code == 0
+        assert "test_dir/file1.txt" in result.output
+        assert "This is file1.txt" in result.output
+        assert "test_dir/file2.txt" in result.output
+        assert "This is file2.txt" in result.output
+        assert "test_dir/subdirectory/file3.txt" in result.output
+        assert "This is file3.txt" in result.output
+        assert "test_dir/ignored_file.txt" not in result.output
+        assert "This file should be ignored" not in result.output
