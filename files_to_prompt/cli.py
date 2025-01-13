@@ -239,9 +239,10 @@ def cli(
         writer = lambda s: print(s, file=fp)
 
     default_ignore_patterns = [
+        "README.md",
+        "LICENSE",
         "*.git*",
         "*.github*",
-        "LICENSE",
         ".gitignore",
         "*env*",
         "*venv*",
@@ -253,6 +254,7 @@ def cli(
         "requirements.txt",
         "pyproject.toml",
         "uv.lock",
+        ".python-version",
     ]
 
     if ignore_default:

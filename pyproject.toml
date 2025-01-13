@@ -1,26 +1,34 @@
 [project]
-name = "files-to-prompt"
-version = "0.4"
+name = "files-to-prompt-v2"
+version = "0.1"
 description = "Concatenate a directory full of files into a single prompt for use with LLMs"
-readme = "README.md"
-authors = [{name = "Simon Willison"}]
-license = {text = "Apache-2.0"}
 requires-python = ">=3.8"
+authors = [{name = "Ahmad M. Osman"}, {name = "Simon Willison"}]
+license = {text = "Apache-2.0"}
 classifiers = [
     "License :: OSI Approved :: Apache Software License"
+]
+keywords = [
+    "prompt", "llm", "concatenate", "files", "directory", "ai", "artificial intelligence", "language model", "claude", "xml", "cli", "command line", "ignore", "hidden files", "file processing", "text processing"
 ]
 dependencies = [
     "click"
 ]
+readme = "README.md"
 
 [project.urls]
-Homepage = "https://github.com/simonw/files-to-prompt"
-Changelog = "https://github.com/simonw/files-to-prompt/releases"
-Issues = "https://github.com/simonw/files-to-prompt/issues"
-CI = "https://github.com/simonw/files-to-prompt/actions"
+Homepage = "https://github.com/TheAhmadOsman/files-to-prompt"
+Changelog = "https://github.com/TheAhmadOsman/files-to-prompt/releases"
+Issues = "https://github.com/TheAhmadOsman/files-to-prompt/issues"
+CI = "https://github.com/TheAhmadOsman/files-to-prompt/actions"
 
-[project.entry-points.console_scripts]
+[tool.uv]
+default-groups = []
+
+[dependency-groups]
+test = [
+    "pytest",
+]
+
+[project.scripts]
 files-to-prompt = "files_to_prompt.cli:cli"
-
-[project.optional-dependencies]
-test = ["pytest"]
